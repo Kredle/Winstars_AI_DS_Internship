@@ -17,7 +17,7 @@ The dataset consists of **70,000 grayscale images (28x28 pixels)** representing 
 
 ## Project Structure
 ```
-Task_!/
+Task_1/
 │── winstars_ai_task_1.ipynb  # Main script for training and testing the models
 │── requirements.txt     # List of required dependencies
 │── README.md            # Project documentation
