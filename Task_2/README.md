@@ -39,19 +39,19 @@ kaggle datasets download -d alessiocorrado99/animals10
 unzip animals10.zip -d data/animals-10 #Then rename its folders 
 ```
 
-##Usage 🚀
+## Usage 
 Full Pipeline Verification
 ```bash
 python pipeline/main_pipeline.py \
     --text "There is a black cat in the image" \
     --image "data/animals-10/cat/2.jpeg"
 ```
-#Output example:
+## Output example:
 ```bash
 Result: True
 ```
     
-##Component Usage
+## Component Usage
 1. Text Processing (NER):
 ```python
 from ner.inference_ner import AnimalNER
@@ -66,7 +66,7 @@ classifier = AnimalClassifier()
 prediction = classifier.predict("data/animals-10/cat/1.jpeg")  # Returns "cat"
 ```
 
-##Training Models 
+## Training Models 
 1. Train NER Model
 ```bash
 python ner/train_ner.py
