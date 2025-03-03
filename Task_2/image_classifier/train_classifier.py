@@ -16,11 +16,11 @@ VAL_SPLIT = 0.2
 
 # Path checking
 if not os.path.exists(DATA_PATH):
-    print(f"Помилка: Директорія {DATA_PATH} не знайдена!")
+    print(f"Error: {DATA_PATH} not found!")
     exit()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(f"Usingй: {device}")
+print(f"Using: {device}")
 
 # Transformation 
 train_transform = transforms.Compose([
