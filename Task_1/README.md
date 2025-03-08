@@ -162,8 +162,8 @@ for algorithm in ['rf', 'nn', 'cnn']:
 ```
 
 ## Results
-- **Random Forest Accuracy**: ~94%
-- **Feed-Forward NN Accuracy**: ~97%
+- **Random Forest Accuracy**: ~97%
+- **Feed-Forward NN Accuracy**: ~98%
 - **CNN Accuracy**: ~99%
 
 ---
