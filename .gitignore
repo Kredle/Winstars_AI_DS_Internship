@@ -1,0 +1,11 @@
+# Datasets
+*.zip
+Task_2/data/
+
+# Model weights and artifacts
+*.pth
+Task_2/ner_model/
+
+# Python cache
+__pycache__/
+*.pyc

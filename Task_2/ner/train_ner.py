@@ -7,12 +7,50 @@ from transformers import (
 )
 from datasets import Dataset
 import numpy as np
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Train NER model for animal recognition')
+    parser.add_argument('--num-examples', type=int, default=1000,
+                        help='Number of synthetic training examples')
+    parser.add_argument('--epochs', type=int, default=3,
+                        help='Number of training epochs')
+    parser.add_argument('--batch-size', type=int, default=16,
+                        help='Batch size for training')
+    parser.add_argument('--lr', type=float, default=2e-5,
+                        help='Learning rate')
+    parser.add_argument('--output-dir', type=str, default="./ner_model",
+                        help='Output directory for model')
+    parser.add_argument('--seed', type=int, default=42,
+                        help='Random seed')
+    return parser.parse_args()
+
+args = parse_args()
+
+# Config from arguments
+NUM_EXAMPLES = args.num_examples
+EPOCHS = args.epochs
+BATCH_SIZE = args.batch_size
+LR = args.lr
+OUTPUT_DIR = args.output_dir
+
+# Set seed
+np.random.seed(args.seed)
+torch.manual_seed(args.seed)
 
 # Animal classes
 animal_classes = [
     "cat", "dog", "horse", "spider", "butterfly",
     "chicken", "cow", "sheep", "elephant", "squirrel"
 ]
+
+print(f"\nNER Training Configuration:")
+print(f"  Synthetic Examples: {NUM_EXAMPLES}")
+print(f"  Batch Size: {BATCH_SIZE}")
+print(f"  Epochs: {EPOCHS}")
+print(f"  Learning Rate: {LR}")
+print(f"  Output Directory: {OUTPUT_DIR}")
+print()
 
 # Data generation
 def generate_synthetic_data(num_examples=1000):
@@ -85,11 +123,10 @@ def tokenize_and_align_labels(examples):
 
 # Training settings
 training_args = TrainingArguments(
-    output_dir="./ner_model",
-    evaluation_strategy="no",
-    num_train_epochs=3,
-    per_device_train_batch_size=16,
-    learning_rate=2e-5,
+    output_dir=OUTPUT_DIR,
+    num_train_epochs=EPOCHS,
+    per_device_train_batch_size=BATCH_SIZE,
+    learning_rate=LR,
     weight_decay=0.01,
     save_strategy="epoch",
     logging_dir="./logs",
@@ -104,7 +141,7 @@ model = DistilBertForTokenClassification.from_pretrained(
 )
 
 # Getting dataset
-synthetic_data = generate_synthetic_data()
+synthetic_data = generate_synthetic_data(num_examples=NUM_EXAMPLES)
 dataset = Dataset.from_dict(synthetic_data)
 tokenized_dataset = dataset.map(tokenize_and_align_labels, batched=True)
 
@@ -118,6 +155,8 @@ trainer = Trainer(
 trainer.train()
 
 # Saving the model
-model.save_pretrained("./ner_model/final_model")
+final_model_path = f"{OUTPUT_DIR}/final_model"
+model.save_pretrained(final_model_path)
 tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
-tokenizer.save_pretrained("./ner_model/final_model")
+tokenizer.save_pretrained(final_model_path)
+print(f"\nTraining complete! Model saved to {final_model_path}")

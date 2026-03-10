@@ -6,13 +6,45 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 import os
 import numpy as np
+import argparse
 
-# Config
-DATA_PATH = "./data/animals-10"  
-BATCH_SIZE = 32
-EPOCHS = 20  
-NUM_CLASSES = 10
-VAL_SPLIT = 0.2  
+def parse_args():
+    parser = argparse.ArgumentParser(description='Train ResNet18 animal classifier')
+    parser.add_argument('--data-path', type=str, default="./data/animals-10/raw-img",
+                        help='Path to dataset')
+    parser.add_argument('--batch-size', type=int, default=32,
+                        help='Batch size for training')
+    parser.add_argument('--epochs', type=int, default=20,
+                        help='Number of training epochs')
+    parser.add_argument('--num-classes', type=int, default=10,
+                        help='Number of animal classes')
+    parser.add_argument('--val-split', type=float, default=0.2,
+                        help='Validation split ratio')
+    parser.add_argument('--lr', type=float, default=0.001,
+                        help='Learning rate')
+    parser.add_argument('--output-model', type=str, default="animal_classifier.pth",
+                        help='Output model path')
+    parser.add_argument('--best-model', type=str, default="best_model.pth",
+                        help='Best model path')
+    parser.add_argument('--seed', type=int, default=42,
+                        help='Random seed')
+    return parser.parse_args()
+
+args = parse_args()
+
+# Config from arguments
+DATA_PATH = args.data_path
+BATCH_SIZE = args.batch_size
+EPOCHS = args.epochs
+NUM_CLASSES = args.num_classes
+VAL_SPLIT = args.val_split
+LR = args.lr
+OUTPUT_MODEL = args.output_model
+BEST_MODEL = args.best_model
+
+# Set seed
+np.random.seed(args.seed)
+torch.manual_seed(args.seed)  
 
 # Path checking
 if not os.path.exists(DATA_PATH):
@@ -21,6 +53,16 @@ if not os.path.exists(DATA_PATH):
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f"Using: {device}")
+
+# Print configuration
+print(f"\nTraining Configuration:")
+print(f"  Data Path: {DATA_PATH}")
+print(f"  Batch Size: {BATCH_SIZE}")
+print(f"  Epochs: {EPOCHS}")
+print(f"  Learning Rate: {LR}")
+print(f"  Validation Split: {VAL_SPLIT}")
+print(f"  Output Model: {OUTPUT_MODEL}")
+print()
 
 # Transformation 
 train_transform = transforms.Compose([
@@ -47,13 +89,18 @@ model.fc = nn.Linear(model.fc.in_features, NUM_CLASSES)
 model = model.to(device)
 
 # Loss function
-class_counts = [len(os.listdir(os.path.join(DATA_PATH, cls))) for cls in full_dataset.classes]
-class_weights = 1. / torch.tensor(class_counts, dtype=torch.float)
-class_weights = class_weights.to(device)
-criterion = nn.CrossEntropyLoss(weight=class_weights)
+class_folders = [os.path.join(DATA_PATH, cls) for cls in full_dataset.classes]
+class_counts = [len(os.listdir(folder)) for folder in class_folders]
+
+if len(class_counts) == NUM_CLASSES:
+    class_weights = 1. / torch.tensor(class_counts, dtype=torch.float)
+    class_weights = class_weights.to(device)
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
+else:
+    criterion = nn.CrossEntropyLoss()
 
 # Optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=LR)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1) 
 
 # Training
@@ -61,7 +108,7 @@ best_val_loss = float('inf')
 for epoch in range(EPOCHS):
     model.train()
     running_loss = 0.0
-    progress_bar = tqdm(train_loader, desc=f"Епоха {epoch+1}/{EPOCHS}")
+    progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}")
     for images, labels in progress_bar:
         images, labels = images.to(device), labels.to(device)
         
@@ -94,9 +141,10 @@ for epoch in range(EPOCHS):
     # Saving best trained model
     if val_loss < best_val_loss:
         best_val_loss = val_loss
-        torch.save(model.state_dict(), "best_model.pth")
+        torch.save(model.state_dict(), BEST_MODEL)
     
     scheduler.step() 
 
-# Saving model to animal_classifier.pth
-torch.save(model.state_dict(), "animal_classifier.pth")
+# Saving model to output path
+torch.save(model.state_dict(), OUTPUT_MODEL)
+print(f"\nTraining complete! Model saved to {OUTPUT_MODEL}")
